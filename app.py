@@ -2,8 +2,10 @@ from dash import Input, Output, Dash, html, dcc
 import dash_bootstrap_components as dbc
 import plotly.express as px
 import pandas as pd
+from datetime import date
 
 from data import get_vanilla_df
+from regional_data_vis import RegDataVis
 
 # Define application
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
@@ -15,7 +17,7 @@ delta_to_day = {'2W':14, '1M':30, '3M': 90, '6M':180, '9M':270, '1Y':365, 'Max':
 df_can = get_vanilla_df()
 df = df_can
 
-# Get today's data
+# Get today's data point
 def get_today(key):
     date_today = max(df['date'])
     return df[df['date'] == date_today][key].tolist()[0]
@@ -89,7 +91,11 @@ new_cases_tabs = html.Div(
             id="new_cases_tabs",
             active_tab="Max",
         ),
-        dcc.Graph(id="new_cases_graph"),
+        dcc.Loading(
+            id='new_cases_graph_loading',
+            children=[dcc.Graph(id="new_cases_graph")],
+            type='default'
+        ),
     ]
 )
 new_deaths_tabs = html.Div(
@@ -99,15 +105,47 @@ new_deaths_tabs = html.Div(
             id="new_deaths_tabs",
             active_tab="Max",
         ),
-        dcc.Graph(id="new_deaths_graph"),
+        dcc.Loading(
+            id='new_deaths_graph_loading',
+            children=[dcc.Graph(id="new_deaths_graph")],
+            type='default'
+        ),
+    ]
+)
+
+# Create regional vaccination map
+rdv = RegDataVis()
+vaccine_map_date_picker = dcc.DatePickerSingle(
+    id='vaccine_map_date_picker',
+    min_date_allowed=rdv.date_range[0],
+    max_date_allowed=rdv.date_range[1],
+    date=rdv.date_range[1]
+)
+
+vaccine_map = html.Div(
+    [
+        dbc.Tabs(
+            [dbc.Tab(label=feature, tab_id=feature) for feature in rdv.features],
+            id="vaccine_map_feature_tabs",
+            active_tab="active_cases",
+        ),
+        dcc.Loading(
+            id='map_loading',
+            children=[dcc.Graph(id="vaccine_map")],
+            type='default'
+        ),
     ]
 )
 
 app.layout = dbc.Container(
     [
-        dbc.Row([dbc.Col(html.H2('Canada covid-19 Dashboard', style={"margin-top": 20}), md=9)]),
+        dbc.Row([dbc.Col(html.H2('Ontario Covid-19 Vaccination Dashboard', style={"margin-top": 20}), md=9)]),
         html.Hr(),
         dbc.Row([dbc.Col(card) for card in cards]),
+        html.Br(),
+        dbc.Row([dbc.Col(html.H4('Select date:'), width=2),
+                 dbc.Col(vaccine_map_date_picker)]),
+        dbc.Row(dbc.Col(vaccine_map)),
         html.Br(),
         dbc.Row(dbc.Col(html.H4('New Cases'))),
         dbc.Row(new_cases_tabs),
@@ -121,12 +159,16 @@ app.layout = dbc.Container(
 )
 
 @app.callback(Output("new_cases_graph", "figure"), Input("new_cases_tabs", "active_tab"))
-def switch_tab(delta):
+def switch_tab1(delta):
     return get_tab_content(delta, get_new_cases_fig)
 
 @app.callback(Output("new_deaths_graph", "figure"), Input("new_deaths_tabs", "active_tab"))
-def switch_tab(delta):
+def switch_tab2(delta):
     return get_tab_content(delta, get_new_deaths_fig)
+
+@app.callback(Output("vaccine_map", "figure"), [Input("vaccine_map_feature_tabs", "active_tab"), Input("vaccine_map_date_picker", "date")])
+def update_map(feature, date):
+    return rdv.get_map_figure(feature, date)
 
 
 if __name__ == '__main__':
