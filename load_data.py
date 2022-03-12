@@ -46,6 +46,7 @@ class DataLoader():
         vac_status_hosp_icu_data = pd.read_csv(self.datalinks['vac_status_hosp_icu']) #icu, hospitalization cases
         deaths_by_vac_status = pd.read_csv(self.datalinks['deaths_by_vac_status']) #death cases
         cases_by_vac_status_data = pd.read_csv(self.datalinks['cases_by_vac_status']) #new case
+        vaccine_count_data = pd.read_csv(self.datalinks['vaccines_by_age']) #vaccine count
 
         vaccines_by_age_phu_data = pd.read_csv(self.datalinks['vaccines_by_age_phu']) #vaccine rate by phu
         cases_by_status_and_phu_data = pd.read_csv(self.datalinks['cases_by_status_and_phu']) #vaccine rate by phu
@@ -54,10 +55,14 @@ class DataLoader():
         deaths_by_vac_status = deaths_by_vac_status[deaths_by_vac_status['age_group']=='ALL'].drop('age_group', axis=1)
         cases_by_vac_status_data = cases_by_vac_status_data.drop(
             ['cases_unvac_rate_7ma', 'cases_partial_vac_rate_7ma', 'cases_full_vac_rate_7ma'], axis = 1).rename(columns={'Date': 'date'}).dropna(axis=0)
+        vaccine_count_data = vaccine_count_data.drop("Second_dose_cumulative", axis=1).dropna().rename(columns={'Date': 'date'})
+        vaccine_count_data = vaccine_count_data[vaccine_count_data['Agegroup'].isin(['Ontario_5plus'])].drop("Agegroup", axis=1)
+        vaccine_count_data['unvaccinated']=vaccine_count_data["Total population"]-vaccine_count_data["At least one dose_cumulative"]
 
         vac_status_hosp_icu_data['date'] = pd.to_datetime(vac_status_hosp_icu_data['date'])
         deaths_by_vac_status['date'] = pd.to_datetime(deaths_by_vac_status['date'])
         cases_by_vac_status_data['date'] = pd.to_datetime(cases_by_vac_status_data['date'])
+        vaccine_count_data['date'] = pd.to_datetime(vaccine_count_data['date'])
         vaccines_by_age_phu_data['Date'] = pd.to_datetime(vaccines_by_age_phu_data['Date'])
         cases_by_status_and_phu_data['FILE_DATE'] = pd.to_datetime(cases_by_status_and_phu_data['FILE_DATE'])
 
@@ -71,7 +76,7 @@ class DataLoader():
         #-- Data Aggregation --------------------------------------------------
         vaccine_case_data = vac_status_hosp_icu_data.join(
                 cases_by_vac_status_data.set_index('date'), how='inner', on='date').join(
-                deaths_by_vac_status.set_index('date'), how='outer', on='date')
+                vaccine_count_data.set_index('date'), how='inner', on='date')
 
         regional_data = vaccines_by_age_phu_data.join(
             cases_by_status_and_phu_data.set_index(['date', 'PHU_NAME']),
@@ -89,12 +94,42 @@ class DataLoader():
         regional_data['percent_active_cases'] = regional_data['active_cases'] / regional_data['total_population'] * 100
         regional_data['percent_deaths'] = regional_data['deaths'] / regional_data['total_population'] * 100
         regional_data['percent_resolved_cases'] = regional_data['resolved_cases'] / regional_data['total_population'] * 100
-
-
+        
+        line_graph1 = pd.DataFrame()
+        line_graph1['basispt_icu_unvac'] = vaccine_case_data['icu_unvac']/vaccine_case_data['unvaccinated'] * 100000
+        line_graph1['basispt_icu_full_vac'] = vaccine_case_data['icu_full_vac']/vaccine_case_data['fully_vaccinated_cumulative'] * 100000
+        line_graph1['basispt_hospitalnonicu_unvac'] = vaccine_case_data['hospitalnonicu_unvac']/vaccine_case_data['unvaccinated'] * 100000
+        line_graph1['basispt_hospitalnonicu_full_vac'] = vaccine_case_data['hospitalnonicu_full_vac']/vaccine_case_data['fully_vaccinated_cumulative'] * 100000
+        line_graph1['basispt_new_cases_unvac'] = vaccine_case_data['covid19_cases_unvac']/vaccine_case_data['unvaccinated'] * 100000
+        line_graph1['basispt_new_cases_full_vac'] = vaccine_case_data['covid19_cases_full_vac']/vaccine_case_data['fully_vaccinated_cumulative'] * 100000
+        line_graph1['date'] = vaccine_case_data['date']
+        
+        chart_num = pd.DataFrame()
+        chart_num['current_total_hostpitalized_case'] = vaccine_case_data['icu_unvac'] + vaccine_case_data['icu_partial_vac'] + vaccine_case_data['icu_full_vac']
+        chart_num['current_total_hostpitalized_case'] += vaccine_case_data['hospitalnonicu_unvac'] + vaccine_case_data['hospitalnonicu_partial_vac'] + vaccine_case_data['hospitalnonicu_full_vac']
+        chart_num['change_current_total_hostpitalized_case'] = chart_num['current_total_hostpitalized_case'] - chart_num['current_total_hostpitalized_case'].shift(1)
+        
+        chart_num['date'] = vaccine_case_data['date']
+        chart_num = chart_num.set_index('date')
+        
+        regional_data_agg = regional_data.groupby(['date']).sum()
+        chart_num['fully_vaccinated_cumulative'] = regional_data_agg['fully_vaccinated_cumulative']
+        chart_num['change_in_fully_vaccinated_cumulative'] = regional_data_agg['fully_vaccinated_cumulative'] - chart_num['fully_vaccinated_cumulative'].shift(1)
+        
+        chart_num['active_cases'] = regional_data_agg['active_cases']
+        chart_num['change_in_active_cases'] = chart_num['active_cases'] - chart_num['active_cases'].shift(1)
+        
+        chart_num['deaths_cummulative'] = regional_data_agg['deaths']
+        chart_num['change_in_deaths_cummulative'] = chart_num['deaths_cummulative'] - chart_num['deaths_cummulative'].shift(1)
+        
+        chart_num = chart_num.dropna()
+        
         #-- Exporting Data ----------------------------------------------------
-        vaccine_case_data.to_csv(self.outpath + "vaccine_case_data" + self.file_type, index=False)
+        line_graph1.to_csv(self.outpath + "line_graph1_data" + self.file_type, index=False)
         regional_data.to_csv(self.outpath + "regional_data" + self.file_type, index=False)
+        deaths_by_vac_status.to_csv(self.outpath + "line_graph2_data" + self.file_type, index=False)
+        chart_num.to_csv(self.outpath + "chart_num" + self.file_type)
 
 
 if __name__ == '__main__':
-    test = data()
+    test = DataLoader()
