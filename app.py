@@ -63,27 +63,6 @@ def get_tab_content(delta, plotting_func):
 
     return plotting_func(df)
 
-cards = [
-    dbc.Card(
-        [
-            html.H5("Cases"),
-            html.H2(str(total_cases)),
-            html.H2("+" + str(new_cases))
-        ],
-        body=True,
-        color='ice'
-    ),
-    dbc.Card(
-        [
-            html.H5("Deaths"),
-            html.H2(str(total_deaths)),
-            html.H2("+" + str(new_deaths))
-        ],
-        body=True,
-        color='ice'
-    ),
-]
-
 new_cases_tabs = html.Div(
     [
         dbc.Tabs(
@@ -115,8 +94,8 @@ new_deaths_tabs = html.Div(
 
 # Create regional vaccination map
 rdv = RegDataVis()
-vaccine_map_date_picker = dcc.DatePickerSingle(
-    id='vaccine_map_date_picker',
+date_picker = dcc.DatePickerSingle(
+    id='date_picker',
     min_date_allowed=rdv.date_range[0],
     max_date_allowed=rdv.date_range[1],
     date=rdv.date_range[1]
@@ -124,28 +103,73 @@ vaccine_map_date_picker = dcc.DatePickerSingle(
 
 vaccine_map = html.Div(
     [
-        dbc.Tabs(
-            [dbc.Tab(label=feature, tab_id=feature) for feature in rdv.features],
-            id="vaccine_map_feature_tabs",
-            active_tab="active_cases",
+        dcc.Dropdown(
+            rdv.vacc_metrics,
+            "percent_fully_vaccinated",
+            id="vaccine_metric_dropdown",
+            clearable=False,
         ),
         dcc.Loading(
-            id='map_loading',
+            id='vacc_map_loading',
             children=[dcc.Graph(id="vaccine_map")],
             type='default'
         ),
     ]
 )
 
+case_map = html.Div(
+    [
+        dcc.Dropdown(
+            rdv.case_metrics,
+            "percent_active_cases",
+            id="case_metric_dropdown",
+            clearable=False,
+        ),
+        dcc.Loading(
+            id='case_map_loading',
+            children=[dcc.Graph(id="case_map")],
+            type='default'
+        ),
+    ]
+)
+
+cards = dbc.CardGroup(
+    [dbc.Card(
+        [
+            html.H5("Cases"),
+            html.H2(str(total_cases)),
+            html.H2("+" + str(new_cases))
+        ],
+        body=True,
+        color='ice'
+    ),
+    dbc.Card(
+        [
+            html.H5("Deaths"),
+            html.H2(str(total_deaths)),
+            html.H2("+" + str(new_deaths))
+        ],
+        body=True,
+        color='ice'
+    ),
+    dbc.Card(
+        [
+            html.H5("Select date:"),
+            date_picker,
+        ],
+        body=True,
+        color='ice'
+    ),])
+
 app.layout = dbc.Container(
     [
         dbc.Row([dbc.Col(html.H2('Ontario Covid-19 Vaccination Dashboard', style={"margin-top": 20}), md=9)]),
         html.Hr(),
-        dbc.Row([dbc.Col(card) for card in cards]),
+        dbc.Row(cards),
         html.Br(),
-        dbc.Row([dbc.Col(html.H4('Select date:'), width=2),
-                 dbc.Col(vaccine_map_date_picker)]),
-        dbc.Row(dbc.Col(vaccine_map)),
+        # dbc.Row([dbc.Col(html.H4('Select date:'), width=2),
+        #          dbc.Col(date_picker)]),
+        dbc.Row([dbc.Col(vaccine_map),dbc.Col(case_map)]),
         html.Br(),
         dbc.Row(dbc.Col(html.H4('New Cases'))),
         dbc.Row(new_cases_tabs),
@@ -166,7 +190,11 @@ def switch_tab1(delta):
 def switch_tab2(delta):
     return get_tab_content(delta, get_new_deaths_fig)
 
-@app.callback(Output("vaccine_map", "figure"), [Input("vaccine_map_feature_tabs", "active_tab"), Input("vaccine_map_date_picker", "date")])
+@app.callback(Output("vaccine_map", "figure"), [Input("vaccine_metric_dropdown", "value"), Input("date_picker", "date")])
+def update_map(feature, date):
+    return rdv.get_map_figure(feature, date)
+
+@app.callback(Output("case_map", "figure"), [Input("case_metric_dropdown", "value"), Input("date_picker", "date")])
 def update_map(feature, date):
     return rdv.get_map_figure(feature, date)
 

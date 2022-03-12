@@ -6,12 +6,15 @@ import json
 FEATURES = ['percent_at_least_one_dose',
             'percent_fully_vaccinated',
             'percent_3doses',
-            'active_cases',
-            'resolved_cases',
-            'deaths',
             'percent_active_cases',
             'percent_deaths',
             'percent_resolved_cases']
+VACC_METRICS = ['percent_at_least_one_dose',
+                'percent_fully_vaccinated',
+                'percent_3doses',]
+CASE_METRICS = ['percent_active_cases',
+                'percent_deaths',
+                'percent_resolved_cases']
 
 # Path to data files
 REGIONAL_DATA_PATH = "vaccine_data/regional_data.csv"
@@ -25,6 +28,8 @@ class RegDataVis():
         self.geomap = geomap
         self.regions = list(set(self.df["phu_name"].tolist()))
         self.features = FEATURES
+        self.vacc_metrics = VACC_METRICS
+        self.case_metrics = CASE_METRICS
         self.date_range = (min(self.df['date']), max(self.df['date']))
 
     def reload_data(self):
