@@ -178,7 +178,7 @@ app.layout = dbc.Container(
         #          dbc.Col(date_picker)]),
         dbc.Row([dbc.Col(vaccine_map),dbc.Col(case_map)]),
         html.Br(),
-        dbc.Row(dbc.Col(html.H4('New Cases'))),
+        dbc.Row(dbc.Col(html.H4('Time Series Data'))),
         dbc.Row(tabs),
 
         # # Side by Slider
