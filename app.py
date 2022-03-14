@@ -180,6 +180,8 @@ app.layout = dbc.Container(
         html.Br(),
         dbc.Row(dbc.Col(html.H4('Time Series Data'))),
         dbc.Row(tabs),
+        html.Footer("Data gathered from Ontario goverment open datasets.",
+                    style={'color': 'darkgray'})
 
         # # Side by Slider
         # dbc.Row([dbc.Col([html.H4('New Cases'), new_cases_tabs]),
@@ -298,12 +300,11 @@ def switch_tab(tab):
                           )
     elif tab == 'death_rate':
         df = pd.read_csv('vaccine_data/line_graph2_data.csv')
-        df['booster_received'] = df['deaths_boost_vac_rate_7ma']
         df['fully_vaccinated'] = df['deaths_full_vac_rate_7ma']
         df['unvaccinated'] = df['deaths_not_full_vac_rate_7ma']
         fig = px.line(df,
                       x='date',
-                      y=['booster_received','fully_vaccinated','unvaccinated'],
+                      y=['fully_vaccinated','unvaccinated'],
                       )
         fig.update_layout(xaxis_title="Date",
                           yaxis_title="Per 100k",
