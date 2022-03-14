@@ -73,7 +73,7 @@ class DataLoader():
         vaccines_by_age_phu_data = vaccines_by_age_phu_data[vaccines_by_age_phu_data['Agegroup'].isin(['Ontario_5plus'])].drop('Agegroup', axis=1)
         vaccines_by_age_phu_data = vaccines_by_age_phu_data[vaccines_by_age_phu_data['PHU_NAME']!='UNKNOWN']
 
-        #-- Data Aggregation --------------------------------------------------
+        #-- Data Aggregation ----------------------------percent_at_least_one----------------------
         vaccine_case_data = vac_status_hosp_icu_data.join(
                 cases_by_vac_status_data.set_index('date'), how='inner', on='date').join(
                 vaccine_count_data.set_index('date'), how='inner', on='date')
@@ -91,10 +91,10 @@ class DataLoader():
         regional_data['percent_3doses'] *= 100
 
         #-- Data Aggregation 2-------------------------------------------------
-        regional_data['percent_active_cases'] = regional_data['active_cases'] / regional_data['total_population'] * 100
-        regional_data['percent_deaths'] = regional_data['deaths'] / regional_data['total_population'] * 100
-        regional_data['percent_resolved_cases'] = regional_data['resolved_cases'] / regional_data['total_population'] * 100
-        
+        regional_data['active_cases_per100k'] = regional_data['active_cases'] / regional_data['total_population'] * 100000
+        regional_data['deaths_per100k'] = regional_data['deaths'] / regional_data['total_population'] * 100000
+        regional_data['resolved_cases_per100k'] = regional_data['resolved_cases'] / regional_data['total_population'] * 100000
+
         line_graph1 = pd.DataFrame()
         line_graph1['basispt_icu_unvac'] = vaccine_case_data['icu_unvac']/vaccine_case_data['unvaccinated'] * 100000
         line_graph1['basispt_icu_full_vac'] = vaccine_case_data['icu_full_vac']/vaccine_case_data['fully_vaccinated_cumulative'] * 100000
@@ -103,32 +103,53 @@ class DataLoader():
         line_graph1['basispt_new_cases_unvac'] = vaccine_case_data['covid19_cases_unvac']/vaccine_case_data['unvaccinated'] * 100000
         line_graph1['basispt_new_cases_full_vac'] = vaccine_case_data['covid19_cases_full_vac']/vaccine_case_data['fully_vaccinated_cumulative'] * 100000
         line_graph1['date'] = vaccine_case_data['date']
-        
+
         chart_num = pd.DataFrame()
         chart_num['current_total_hostpitalized_case'] = vaccine_case_data['icu_unvac'] + vaccine_case_data['icu_partial_vac'] + vaccine_case_data['icu_full_vac']
         chart_num['current_total_hostpitalized_case'] += vaccine_case_data['hospitalnonicu_unvac'] + vaccine_case_data['hospitalnonicu_partial_vac'] + vaccine_case_data['hospitalnonicu_full_vac']
         chart_num['change_current_total_hostpitalized_case'] = chart_num['current_total_hostpitalized_case'] - chart_num['current_total_hostpitalized_case'].shift(1)
-        
+
         chart_num['date'] = vaccine_case_data['date']
         chart_num = chart_num.set_index('date')
-        
+
         regional_data_agg = regional_data.groupby(['date']).sum()
+        chart_num['at_least_one_dose_cumulative'] = regional_data_agg['at_least_one_dose_cumulative']
+        chart_num['change_in_at_least_one_dose_cumulative'] = regional_data_agg['at_least_one_dose_cumulative'] - chart_num['at_least_one_dose_cumulative'].shift(1)
+
         chart_num['fully_vaccinated_cumulative'] = regional_data_agg['fully_vaccinated_cumulative']
         chart_num['change_in_fully_vaccinated_cumulative'] = regional_data_agg['fully_vaccinated_cumulative'] - chart_num['fully_vaccinated_cumulative'].shift(1)
-        
+
+        chart_num['third_dose_cumulative'] = regional_data_agg['third_dose_cumulative']
+        chart_num['change_in_third_dose_cumulative'] = regional_data_agg['third_dose_cumulative'] - chart_num['third_dose_cumulative'].shift(1)
+
         chart_num['active_cases'] = regional_data_agg['active_cases']
         chart_num['change_in_active_cases'] = chart_num['active_cases'] - chart_num['active_cases'].shift(1)
-        
+
         chart_num['deaths_cummulative'] = regional_data_agg['deaths']
         chart_num['change_in_deaths_cummulative'] = chart_num['deaths_cummulative'] - chart_num['deaths_cummulative'].shift(1)
-        
+
         chart_num = chart_num.dropna()
-        
+
+        # Primary data source for cards
+        vac_doses = pd.read_csv(self.datalinks['vaccine_doses'])
+        vac_doses['date'] = pd.to_datetime(vac_doses['report_date'])
+        # import pdb;pdb.set_trace()
+        df_main = vac_doses.join(regional_data_agg, how='inner', on='date')
+        df_main = df_main[['date', 'total_population','total_doses_administered','total_individuals_at_least_one','total_individuals_fully_vaccinated', 'total_individuals_3doses','previous_day_total_doses_administered', 'previous_day_at_least_one','previous_day_fully_vaccinated', 'previous_day_3doses', 'active_cases', 'deaths', 'resolved_cases']]
+        df_main['percent_at_least_one'] = df_main['total_individuals_at_least_one'] / df_main['total_population'] * 100
+        df_main['percent_fully_vaccinated'] = df_main['total_individuals_fully_vaccinated'] / df_main['total_population'] * 100
+        df_main['percent_3doses'] = df_main['total_individuals_3doses'] / df_main['total_population'] * 100
+        df_main['active_cases_per100k'] = df_main['active_cases'] / df_main['total_population'] * 100000
+        df_main['deaths_per100k'] = df_main['deaths'] / df_main['total_population'] * 100000
+        df_main['resolved_cases_per100k'] = df_main['resolved_cases'] / df_main['total_population'] * 100000
+
+
         #-- Exporting Data ----------------------------------------------------
         line_graph1.to_csv(self.outpath + "line_graph1_data" + self.file_type, index=False)
         regional_data.to_csv(self.outpath + "regional_data" + self.file_type, index=False)
         deaths_by_vac_status.to_csv(self.outpath + "line_graph2_data" + self.file_type, index=False)
         chart_num.to_csv(self.outpath + "chart_num" + self.file_type)
+        df_main.to_csv(self.outpath + "vac_main" + self.file_type)
 
 
 if __name__ == '__main__':
