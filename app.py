@@ -118,7 +118,7 @@ cards_r2 = dbc.CardGroup(
 vaccine_map = html.Div(
     [
         dcc.Dropdown(
-            rdv.vacc_metrics,
+            dict(zip(rdv.vacc_metrics, rdv.vacc_display)),
             "percent_fully_vaccinated",
             id="vaccine_metric_dropdown",
             clearable=False,
@@ -134,7 +134,7 @@ vaccine_map = html.Div(
 case_map = html.Div(
     [
         dcc.Dropdown(
-            rdv.case_metrics,
+            dict(zip(rdv.case_metrics,rdv.case_display)),
             "active_cases_per100k",
             id="case_metric_dropdown",
             clearable=False,
@@ -151,13 +151,13 @@ tabs = html.Div(
     [
         dbc.Tabs(
             [
-            dbc.Tab(label='Vaccination Status', tab_id='vac_percentage'),
             dbc.Tab(label='ICU Rate', tab_id='icu'),
             dbc.Tab(label='Non-ICU Hospitalization Rate', tab_id='non_icu'),
-            dbc.Tab(label='Death Rate', tab_id='death_rate')
+            dbc.Tab(label='Death Rate', tab_id='death_rate'),
+            dbc.Tab(label='Vaccination Status', tab_id='vac_percentage'),
             ],
             id="line_graph_tabs",
-            active_tab="vac_percentage",
+            active_tab="icu",
         ),
         dcc.Loading(
             id='line_graph_loading',

@@ -15,6 +15,12 @@ VACC_METRICS = ['percent_at_least_one_dose',
 CASE_METRICS = ['active_cases_per100k',
                 'deaths_per100k',
                 'resolved_cases_per100k']
+VACC_DISPLAY= ['At Least One Dose',
+                'Fully Vaccinated',
+                '3 Doses']
+CASE_DISPLAY = ['Active Cases',
+                'Deaths',
+                'Resolved Cases']
 
 # Path to data files
 REGIONAL_DATA_PATH = "vaccine_data/regional_data.csv"
@@ -30,6 +36,8 @@ class RegDataVis():
         self.features = FEATURES
         self.vacc_metrics = VACC_METRICS
         self.case_metrics = CASE_METRICS
+        self.vacc_display = VACC_DISPLAY
+        self.case_display = CASE_DISPLAY
         self.date_range = (min(self.df['date']), max(self.df['date']))
 
     def reload_data(self):
