@@ -15,9 +15,9 @@ VACC_METRICS = ['percent_at_least_one_dose',
 CASE_METRICS = ['active_cases_per100k',
                 'deaths_per100k',
                 'resolved_cases_per100k']
-VACC_DISPLAY= ['At Least One Dose',
-                'Fully Vaccinated',
-                '3 Doses']
+VACC_DISPLAY= ['Percentage of At Least One Dose',
+                'Percentage of Fully Vaccinated',
+                'Percentage of Three Doses']
 CASE_DISPLAY = ['Active Cases',
                 'Deaths',
                 'Resolved Cases']
@@ -69,7 +69,7 @@ class RegDataVis():
         color_scale = 'mint' if 'dose' in feature or 'vac' in feature else 'oranges'
 
         # Create map figure
-        labels = dict(zip(self.features, ["percent"] * 3 + ["per100k"] * 3))
+        labels = dict(zip(self.features, ["Percent "] * 3 + ["Case per 100k "] * 3))
         fig = px.choropleth_mapbox(partial_df,
                                    geojson=self.geomap,
                                    featureidkey="properties.PHU_ID",
@@ -83,6 +83,7 @@ class RegDataVis():
                                    center = {"lat": 49.26713948584354, "lon": -86.43758876897996},
                                    labels=labels
                                    )
+        
         return fig
 
 

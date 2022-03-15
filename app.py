@@ -5,11 +5,13 @@ import pandas as pd
 from datetime import date
 
 from data import get_vanilla_df
+from vaccine_data.data_dictionary import line_graph_data_description
 from regional_data_vis import RegDataVis
 from vac_data_vis import VacDataVis
 
 # Define application
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
+server = app.server
 
 vdv = VacDataVis()
 rdv = RegDataVis()
@@ -25,56 +27,8 @@ cards_r1 = dbc.CardGroup(
     [
     dbc.Card(
         [
-            html.H5("Select date:"),
+            html.H5("Select Reported Date:"),
             date_picker,
-        ],
-        body=True,
-        color='whitesomke'
-    ),
-    dbc.Card(
-        [
-            html.H5("Doses Administered"),
-            html.H2(id="total_doses_administered",
-                    style={'color': 'black'}),
-            html.H4(id="previous_day_total_doses_administered",
-                    style={'color': 'darkgray'})
-        ],
-        body=True,
-        color='ghostwhite'
-    ),
-    dbc.Card(
-        [
-            html.H5("1 Dose Received"),
-            html.H2(id="percent_at_least_one",
-                    style={'color': 'black'}),
-            html.H4(id="previous_day_at_least_one",
-                    style={'color': 'darkgray'})
-        ],
-        body=True,
-        color='whitesomke'
-    ),
-    dbc.Card(
-        [
-            html.H5("2 Doses Received"),
-            html.H2(id="percent_fully_vaccinated",
-                    style={'color': 'black'}),
-            html.H4(id="previous_day_fully_vaccinated",
-                    style={'color': 'darkgray'})
-        ],
-        body=True,
-        color='ghostwhite'
-    ),
-    ])
-
-cards_r2 = dbc.CardGroup(
-    [
-    dbc.Card(
-        [
-            html.H5("3 Doses Received"),
-            html.H2(id="percent_3doses",
-                    style={'color': 'black'}),
-            html.H4(id="previous_day_3doses",
-                    style={'color': 'darkgray'})
         ],
         body=True,
         color='ghostwhite'
@@ -88,7 +42,7 @@ cards_r2 = dbc.CardGroup(
                     style={'color': 'darkgray'})
         ],
         body=True,
-        color='whitesomke'
+        color='ghostwhite'
     ),
     dbc.Card(
         [
@@ -110,9 +64,59 @@ cards_r2 = dbc.CardGroup(
                     style={'color': 'darkgray'})
         ],
         body=True,
+        color='ghostwhite'
+    ),
+    ]
+    )
+
+cards_r2 = dbc.CardGroup(
+    [
+    dbc.Card(
+        [
+            html.H5("Doses Administered"),
+            html.H2(id="total_doses_administered",
+                    style={'color': 'black'}),
+            html.H4(id="previous_day_total_doses_administered",
+                    style={'color': 'darkgray'})
+        ],
+        body=True,
         color='whitesomke'
     ),
-    ])
+    dbc.Card(
+        [
+            html.H5("At Least One Dose"),
+            html.H2(id="percent_at_least_one",
+                    style={'color': 'black'}),
+            html.H4(id="previous_day_at_least_one",
+                    style={'color': 'darkgray'})
+        ],
+        body=True,
+        color='whitesomke'
+    ),
+    dbc.Card(
+        [
+            html.H5("Fully Vaccinated"),
+            html.H2(id="percent_fully_vaccinated",
+                    style={'color': 'black'}),
+            html.H4(id="previous_day_fully_vaccinated",
+                    style={'color': 'darkgray'})
+        ],
+        body=True,
+        color='whitesomke'
+    ),
+    dbc.Card(
+        [
+            html.H5("Three Doses"),
+            html.H2(id="percent_3doses",
+                    style={'color': 'black'}),
+            html.H4(id="previous_day_3doses",
+                    style={'color': 'darkgray'})
+        ],
+        body=True,
+        color='whitesomke'
+    ),
+    ]
+    )
 
 # Create regional vaccination map
 vaccine_map = html.Div(
@@ -169,7 +173,7 @@ tabs = html.Div(
 
 app.layout = dbc.Container(
     [
-        dbc.Row([dbc.Col(html.H2('Ontario Covid-19 Vaccination Dashboard', style={"margin-top": 20}), md=9)]),
+        dbc.Row([dbc.Col(html.H2('Ontario COVID-19 Vaccination Dashboard', style={"margin-top": 20}), md=9)]),
         html.Hr(),
         dbc.Row(cards_r1),
         dbc.Row(cards_r2),
@@ -180,8 +184,8 @@ app.layout = dbc.Container(
         html.Br(),
         dbc.Row(dbc.Col(html.H4('Time Series Data'))),
         dbc.Row(tabs),
-        html.Footer("Data gathered from Ontario goverment open datasets.",
-                    style={'color': 'darkgray'})
+        html.Footer("Data gathered from goverment of Ontario open datasets.",
+                    style={'color': 'darkgray', 'text-align': 'left'})
 
         # # Side by Slider
         # dbc.Row([dbc.Col([html.H4('New Cases'), new_cases_tabs]),
@@ -192,11 +196,11 @@ app.layout = dbc.Container(
 
 @app.callback(Output("total_doses_administered", "children"), Input("date_picker", "date"))
 def update_num(date):
-    return vdv.get_data_point(date, "total_doses_administered")
+    return "{:,}".format(int(vdv.get_data_point(date, "total_doses_administered")))
 
 @app.callback(Output("previous_day_total_doses_administered", "children"), Input("date_picker", "date"))
 def update_num(date):
-    return "+" + str(int(vdv.get_data_point(date, "previous_day_total_doses_administered")))
+    return "+" + "{:,}".format(int(vdv.get_data_point(date, "previous_day_total_doses_administered")))
 
 @app.callback(Output("percent_at_least_one", "children"), Input("date_picker", "date"))
 def update_num(date):
@@ -204,7 +208,7 @@ def update_num(date):
 
 @app.callback(Output("previous_day_at_least_one", "children"), Input("date_picker", "date"))
 def update_num(date):
-    return "+" + str(int(vdv.get_data_point(date, "previous_day_at_least_one"))) + " doses"
+    return "+" + "{:,}".format(int(vdv.get_data_point(date, "previous_day_at_least_one"))) + " doses"
 
 @app.callback(Output("percent_fully_vaccinated", "children"), Input("date_picker", "date"))
 def update_num(date):
@@ -212,7 +216,7 @@ def update_num(date):
 
 @app.callback(Output("previous_day_fully_vaccinated", "children"), Input("date_picker", "date"))
 def update_num(date):
-    return "+" + str(int(vdv.get_data_point(date, "previous_day_fully_vaccinated"))) + " doses"
+    return "+" + "{:,}".format(int(vdv.get_data_point(date, "previous_day_fully_vaccinated"))) + " doses"
 
 @app.callback(Output("percent_3doses", "children"), Input("date_picker", "date"))
 def update_num(date):
@@ -220,31 +224,31 @@ def update_num(date):
 
 @app.callback(Output("previous_day_3doses", "children"), Input("date_picker", "date"))
 def update_num(date):
-    return "+" + str(int(vdv.get_data_point(date, "previous_day_3doses"))) + " doses"
+    return "+" + "{:,}".format(int(vdv.get_data_point(date, "previous_day_3doses"))) + " doses"
 
 @app.callback(Output("active_cases_per100k", "children"), Input("date_picker", "date"))
 def update_num(date):
-    return "{:.2f}".format(vdv.get_data_point(date, "active_cases_per100k"))
+    return "{:,}".format(int(vdv.get_data_point(date, "active_cases_per100k")))
 
 @app.callback(Output("active_cases", "children"), Input("date_picker", "date"))
 def update_num(date):
-    return str(int(vdv.get_data_point(date, "active_cases"))) + " in total"
+    return "{:,}".format(int(vdv.get_data_point(date, "active_cases"))) + " in total"
 
 @app.callback(Output("deaths_per100k", "children"), Input("date_picker", "date"))
 def update_num(date):
-    return "{:.2f}".format(vdv.get_data_point(date, "deaths_per100k"))
+    return "{:,}".format(int(vdv.get_data_point(date, "deaths_per100k")))
 
 @app.callback(Output("deaths", "children"), Input("date_picker", "date"))
 def update_num(date):
-    return str(int(vdv.get_data_point(date, "deaths"))) + " in total"
+    return "{:,}".format(int(vdv.get_data_point(date, "deaths"))) + " in total"
 
 @app.callback(Output("resolved_cases_per100k", "children"), Input("date_picker", "date"))
 def update_num(date):
-    return "{:.2f}".format(vdv.get_data_point(date, "resolved_cases_per100k"))
+    return "{:,}".format(int(vdv.get_data_point(date, "resolved_cases_per100k")))
 
 @app.callback(Output("resolved_cases", "children"), Input("date_picker", "date"))
 def update_num(date):
-    return str(int(vdv.get_data_point(date, "resolved_cases"))) + " in total"
+    return "{:,}".format(int(vdv.get_data_point(date, "resolved_cases"))) + " in total"
 
 @app.callback(Output("vaccine_map", "figure"), [Input("vaccine_metric_dropdown", "value"), Input("date_picker", "date")])
 def update_map(feature, date):
@@ -280,7 +284,7 @@ def switch_tab(tab):
         df['unvaccinated'] = df['basispt_icu_unvac']
         fig = px.line(df,
                       x='date',
-                      y=['fully_vaccinated','unvaccinated'],
+                      y=['fully_vaccinated','unvaccinated']
                       )
         fig.update_layout(xaxis_title="Date",
                           yaxis_title="Per 100k",
@@ -310,8 +314,15 @@ def switch_tab(tab):
                           yaxis_title="Per 100k",
                           hovermode = 'x',
                           )
+    
+    fig.update_layout(
+        title=dict(
+                text=line_graph_data_description[tab],
+                font=dict(size=12, color='darkgray')
+                )
+        )
+    
     return fig
-
 
 if __name__ == '__main__':
     app.run_server(debug=True)
