@@ -5,13 +5,11 @@ import pandas as pd
 from datetime import date
 
 from data import get_vanilla_df
-from vaccine_data.data_dictionary import line_graph_data_description
 from regional_data_vis import RegDataVis
 from vac_data_vis import VacDataVis
 
 # Define application
 app = Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
-server = app.server
 
 vdv = VacDataVis()
 rdv = RegDataVis()
@@ -31,7 +29,7 @@ cards_r1 = dbc.CardGroup(
             date_picker,
         ],
         body=True,
-        color='ghostwhite'
+        color='whitesomke'
     ),
     dbc.Card(
         [
@@ -42,7 +40,7 @@ cards_r1 = dbc.CardGroup(
                     style={'color': 'darkgray'})
         ],
         body=True,
-        color='ghostwhite'
+        color='whitesomke'
     ),
     dbc.Card(
         [
@@ -64,7 +62,7 @@ cards_r1 = dbc.CardGroup(
                     style={'color': 'darkgray'})
         ],
         body=True,
-        color='ghostwhite'
+        color='whitesomke'
     ),
     ]
     )
@@ -80,7 +78,7 @@ cards_r2 = dbc.CardGroup(
                     style={'color': 'darkgray'})
         ],
         body=True,
-        color='whitesomke'
+        color='ghostwhite'
     ),
     dbc.Card(
         [
@@ -102,7 +100,7 @@ cards_r2 = dbc.CardGroup(
                     style={'color': 'darkgray'})
         ],
         body=True,
-        color='whitesomke'
+        color='ghostwhite'
     ),
     dbc.Card(
         [
@@ -113,7 +111,7 @@ cards_r2 = dbc.CardGroup(
                     style={'color': 'darkgray'})
         ],
         body=True,
-        color='whitesomke'
+        color='ghostwhite'
     ),
     ]
     )
@@ -122,7 +120,7 @@ cards_r2 = dbc.CardGroup(
 vaccine_map = html.Div(
     [
         dcc.Dropdown(
-            dict(zip(rdv.vacc_metrics, rdv.vacc_display)),
+            rdv.vacc_metrics,
             "percent_fully_vaccinated",
             id="vaccine_metric_dropdown",
             clearable=False,
@@ -138,7 +136,7 @@ vaccine_map = html.Div(
 case_map = html.Div(
     [
         dcc.Dropdown(
-            dict(zip(rdv.case_metrics,rdv.case_display)),
+            rdv.case_metrics,
             "active_cases_per100k",
             id="case_metric_dropdown",
             clearable=False,
@@ -158,7 +156,7 @@ tabs = html.Div(
             dbc.Tab(label='ICU Rate', tab_id='icu'),
             dbc.Tab(label='Non-ICU Hospitalization Rate', tab_id='non_icu'),
             dbc.Tab(label='Death Rate', tab_id='death_rate'),
-            dbc.Tab(label='Vaccination Status', tab_id='vac_percentage'),
+            dbc.Tab(label='Vaccination Status', tab_id='vac_percentage')
             ],
             id="line_graph_tabs",
             active_tab="icu",
@@ -173,7 +171,7 @@ tabs = html.Div(
 
 app.layout = dbc.Container(
     [
-        dbc.Row([dbc.Col(html.H2('Ontario COVID-19 Vaccination Dashboard', style={"margin-top": 20}), md=9)]),
+        dbc.Row([dbc.Col(html.H2('Ontario Covid-19 Vaccination Dashboard', style={"margin-top": 20}), md=9)]),
         html.Hr(),
         dbc.Row(cards_r1),
         dbc.Row(cards_r2),
@@ -185,7 +183,7 @@ app.layout = dbc.Container(
         dbc.Row(dbc.Col(html.H4('Time Series Data'))),
         dbc.Row(tabs),
         html.Footer("Data gathered from goverment of Ontario open datasets.",
-                    style={'color': 'darkgray', 'text-align': 'left'})
+                    style={'color': 'darkgray'})
 
         # # Side by Slider
         # dbc.Row([dbc.Col([html.H4('New Cases'), new_cases_tabs]),
@@ -224,7 +222,7 @@ def update_num(date):
 
 @app.callback(Output("previous_day_3doses", "children"), Input("date_picker", "date"))
 def update_num(date):
-    return "+" + "{:,}".format(int(vdv.get_data_point(date, "previous_day_3doses"))) + " doses"
+    return "+" + "{:.2f}".format(int(vdv.get_data_point(date, "previous_day_3doses"))) + " doses"
 
 @app.callback(Output("active_cases_per100k", "children"), Input("date_picker", "date"))
 def update_num(date):
@@ -284,7 +282,7 @@ def switch_tab(tab):
         df['unvaccinated'] = df['basispt_icu_unvac']
         fig = px.line(df,
                       x='date',
-                      y=['fully_vaccinated','unvaccinated']
+                      y=['fully_vaccinated','unvaccinated'],
                       )
         fig.update_layout(xaxis_title="Date",
                           yaxis_title="Per 100k",
@@ -314,15 +312,8 @@ def switch_tab(tab):
                           yaxis_title="Per 100k",
                           hovermode = 'x',
                           )
-    
-    fig.update_layout(
-        title=dict(
-                text=line_graph_data_description[tab],
-                font=dict(size=12, color='darkgray')
-                )
-        )
-    
     return fig
+
 
 if __name__ == '__main__':
     app.run_server(debug=True)
