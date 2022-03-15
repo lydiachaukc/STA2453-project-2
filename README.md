@@ -5,4 +5,4 @@
 `python app.py`
 
 ## To get the latest data
-run 'load_data.py'
+run `load_data.py`
